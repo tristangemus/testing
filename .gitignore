@@ -1,33 +1,10 @@
-# Wordpress stuff
-wp-content/uploads/*
-wp-content/cache/*
-wp-content/themes/twenty*
-
-.DS_Store
-._.*
-
-*.DS_Store
-
-.wercker
-.next
-
-node_modules
-yarn-error.log
-
-# WP-CLI
-db-sync
-sql-dump-*.sql
-
-# Dotenv
-.env
-.env.*
-!.env.example
-
-# Vagrant
-bin
-.vagrant
+# Build output
+bin/
+obj/
+dist/
+.build/
 
 # Editors
-.vs
-.vscode
-.idea
+.vs/
+.idea/
+*.user

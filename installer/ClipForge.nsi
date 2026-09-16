@@ -65,7 +65,7 @@ VIAddVersionKey "LegalCopyright"  "Copyright (c) 2026"
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${APP_EXE}"
 !define MUI_FINISHPAGE_RUN_TEXT "Launch ${APP_NAME}"
 !define MUI_FINISHPAGE_LINK "Read the ClipForge guide"
-!define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/tristangemus/testing/tree/main/clipforge"
+!define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/tristangemus/testing"
 !insertmacro MUI_PAGE_FINISH
 
 !insertmacro MUI_UNPAGE_CONFIRM
