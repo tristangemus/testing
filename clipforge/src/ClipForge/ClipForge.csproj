@@ -22,6 +22,8 @@
     <Copyright>Copyright (c) 2026</Copyright>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Framework-dependent builds also run on a newer major runtime than 8.0. -->
+    <RollForward>LatestMajor</RollForward>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>

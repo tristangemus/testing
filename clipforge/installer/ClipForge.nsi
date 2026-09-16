@@ -17,6 +17,18 @@ SetCompressor /SOLID lzma
 !define APP_EXE      "ClipForge.exe"
 !define APP_REGKEY   "Software\Microsoft\Windows\CurrentVersion\Uninstall\ClipForge"
 !define APP_RUNKEY   "Software\Microsoft\Windows\CurrentVersion\Run"
+!define DOTNET_URL   "https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe"
+!define DOTNET_DIR   "$PROGRAMFILES64\dotnet\shared\Microsoft.WindowsDesktop.App"
+
+; REQUIRE_RUNTIME=1 builds the compact installer, whose payload is framework-dependent and
+; therefore needs the .NET Desktop Runtime present on the machine.
+!ifndef REQUIRE_RUNTIME
+  !define REQUIRE_RUNTIME 0
+!endif
+
+!if ${REQUIRE_RUNTIME} == 1
+  Var DotNetFound
+!endif
 
 Name "${APP_NAME} ${APP_VERSION}"
 OutFile "${OUTFILE}"
@@ -39,7 +51,11 @@ VIAddVersionKey "LegalCopyright"  "Copyright (c) 2026"
 !define MUI_ABORTWARNING
 
 !define MUI_WELCOMEPAGE_TITLE "Install ${APP_NAME}"
-!define MUI_WELCOMEPAGE_TEXT  "${APP_NAME} records your gameplay and keeps an instant-replay buffer, so you can save the last moments of a match after they happen.$\r$\n$\r$\nIt installs for the current user only, so no administrator rights are needed.$\r$\n$\r$\nOn first launch ${APP_NAME} offers to download ffmpeg (about 80 MB), which it uses to capture and encode."
+!if ${REQUIRE_RUNTIME} == 1
+  !define MUI_WELCOMEPAGE_TEXT "${APP_NAME} records your gameplay and keeps an instant-replay buffer, so you can save the last moments of a match after they happen.$\r$\n$\r$\nIt installs for the current user only, so no administrator rights are needed.$\r$\n$\r$\nThis compact build uses the .NET 8 Desktop Runtime and will offer to install it if your PC does not have it yet. On first launch ${APP_NAME} also offers to download ffmpeg (about 80 MB), which it uses to capture and encode."
+!else
+  !define MUI_WELCOMEPAGE_TEXT "${APP_NAME} records your gameplay and keeps an instant-replay buffer, so you can save the last moments of a match after they happen.$\r$\n$\r$\nIt installs for the current user only, so no administrator rights are needed.$\r$\n$\r$\nEverything it needs to run is included. On first launch ${APP_NAME} offers to download ffmpeg (about 80 MB), which it uses to capture and encode."
+!endif
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_COMPONENTS
@@ -74,9 +90,73 @@ VIAddVersionKey "LegalCopyright"  "Copyright (c) 2026"
   ${EndIf}
 !macroend
 
+; Sets $DotNetFound to 1 if a Windows Desktop runtime of this major version is present.
+!macro LookForRuntime pattern
+  ${If} $DotNetFound == "0"
+    FindFirst $0 $1 "${DOTNET_DIR}\${pattern}"
+    ${If} $0 != ""
+      ${IfNot} $1 == ""
+        StrCpy $DotNetFound "1"
+      ${EndIf}
+      FindClose $0
+    ${EndIf}
+  ${EndIf}
+!macroend
+
+!if ${REQUIRE_RUNTIME} == 1
+Function EnsureDotNet
+  StrCpy $DotNetFound "0"
+  ; The app rolls forward to a later major, so any of these will run it.
+  !insertmacro LookForRuntime "8.*"
+  !insertmacro LookForRuntime "9.*"
+  !insertmacro LookForRuntime "10.*"
+  ${If} $DotNetFound == "1"
+    DetailPrint ".NET Desktop Runtime found."
+    Return
+  ${EndIf}
+
+  MessageBox MB_YESNO|MB_ICONQUESTION \
+    "${APP_NAME} needs the .NET 8 Desktop Runtime, which is not installed on this PC.$\r$\n$\r$\nDownload and install it from Microsoft now? (about 55 MB)" \
+    IDYES dodownload
+    MessageBox MB_OK|MB_ICONINFORMATION \
+      "${APP_NAME} will be installed, but will not start until the runtime is present.$\r$\n$\r$\nGet it from:$\r$\nhttps://dotnet.microsoft.com/download/dotnet/8.0"
+    Return
+
+  dodownload:
+  StrCpy $2 "$TEMP\windowsdesktop-runtime-x64.exe"
+  DetailPrint "Downloading the .NET Desktop Runtime..."
+  ; curl.exe ships with Windows 10 1803 and later, and unlike NSISdl it speaks HTTPS.
+  nsExec::ExecToLog '"$SYSDIR\curl.exe" -sSL --fail -o "$2" "${DOTNET_URL}"'
+  Pop $3
+  ${If} $3 != 0
+    Delete "$2"
+    MessageBox MB_OK|MB_ICONEXCLAMATION \
+      "The runtime download failed (code $3).$\r$\n$\r$\nInstall it manually from:$\r$\nhttps://dotnet.microsoft.com/download/dotnet/8.0"
+    Return
+  ${EndIf}
+
+  DetailPrint "Installing the .NET Desktop Runtime..."
+  nsExec::ExecToLog '"$2" /install /quiet /norestart'
+  Pop $3
+  Delete "$2"
+
+  ; 0 = installed, 3010 = installed but wants a reboot, 1638 = a newer build is already there.
+  ${If} $3 != 0
+  ${AndIf} $3 != 3010
+  ${AndIf} $3 != 1638
+    MessageBox MB_OK|MB_ICONEXCLAMATION \
+      "The runtime installer returned code $3. ${APP_NAME} may not start until the .NET 8 Desktop Runtime is installed."
+  ${EndIf}
+FunctionEnd
+!endif
+
 Section "ClipForge" SecCore
   SectionIn RO
   !insertmacro CloseRunningApp
+
+  !if ${REQUIRE_RUNTIME} == 1
+    Call EnsureDotNet
+  !endif
 
   SetOutPath "$INSTDIR"
   File /r "${PAYLOAD}/*.*"

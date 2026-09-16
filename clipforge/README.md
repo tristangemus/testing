@@ -31,15 +31,25 @@ Defaults: 1080p, 60 fps, 20 Mbps, H.264, 60-second replay buffer, clips in `Vide
 
 ## Install
 
-Run **`ClipForge-1.0.0-Setup.exe`**. It installs per-user into
-`%LOCALAPPDATA%\Programs\ClipForge`, so Windows never asks for administrator rights, and it
-registers a normal Add/Remove Programs entry. Optional checkboxes add a desktop shortcut and
-start ClipForge minimised at sign-in.
+Every build installs per-user into `%LOCALAPPDATA%\Programs\ClipForge`, so Windows never asks for
+administrator rights, and registers a normal Add/Remove Programs entry. Optional checkboxes add a
+desktop shortcut and start ClipForge minimised at sign-in.
 
-Or just run **`ClipForge-1.0.0-portable.exe`** — one self-contained file, nothing to install.
+There are two editions of each artifact:
 
-Requirements: Windows 10 1809 or later, 64-bit. The .NET runtime is bundled; you do not need to
-install it.
+| File | Size | Needs |
+| --- | --- | --- |
+| `ClipForge-1.0.0-Setup-compact.exe` | 436 KB | .NET 8 Desktop Runtime — the installer offers to fetch it |
+| `ClipForge-1.0.0-Setup.exe` | 46 MB | nothing; the runtime is bundled |
+| `ClipForge-1.0.0-portable-compact.exe` | 888 KB | .NET 8 Desktop Runtime; no install, just run it |
+| `ClipForge-1.0.0-portable.exe` | 64 MB | nothing; no install, just run it |
+
+The **compact** builds are the ones to prefer if you already have the .NET 8 Desktop Runtime (many
+PCs do) or are happy for the installer to download it — about 55 MB, once, straight from Microsoft.
+The **standalone** builds bundle everything and work on a clean Windows install with no network
+beyond ffmpeg.
+
+Requirements: Windows 10 1809 or later, 64-bit.
 
 ### First launch: ffmpeg
 
@@ -100,7 +110,7 @@ leaving you with nothing.
 ./build.sh
 ```
 
-Produces `dist/ClipForge-1.0.0-Setup.exe` and `dist/ClipForge-1.0.0-portable.exe`.
+Produces all four artifacts in `dist/`.
 
 The build works on **Linux as well as Windows** — .NET cross-compiles to `win-x64` and `makensis`
 builds the installer natively. On Linux you need Microsoft's .NET 8 SDK rather than the distro
